@@ -45,22 +45,15 @@ class SimpleWML(object):
         c = self.wmlstring[self.pos]
         self.pos += 1
         return c
+    def next_until(self, endchar):
+        newpos = self.wmlstring.find(endchar, self.pos)
+        val = self.wmlstring[self.pos:newpos]
+        self.pos = newpos + 1
+        return val
     def next_tag(self):
-        buf = ""
-        while True:
-            c = self.next_char()
-            if c == ']':
-                return buf
-            else:
-                buf += c
+        return self.next_until(']')
     def next_key(self):
-        buf = ""
-        while True:
-            c = self.next_char()
-            if c == '=':
-                return buf
-            else:
-                buf += c
+        return self.next_until('=')
     def next_value(self):
         buf = ""
         c = self.next_char()
@@ -69,12 +62,8 @@ class SimpleWML(object):
         else:
             buf += c
             endchar = '\n'
-        while True:
-            c = self.next_char()
-            if c == endchar:
-                return buf
-            else:
-                buf += c
+        buf += self.next_until(endchar)
+        return buf
     def parse_internal(self, tag):
         while True:
             try:
