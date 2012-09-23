@@ -96,7 +96,7 @@ class Connection(object):
         self.pollobj.register(self.sock.fileno())
 
     def nextint(self):
-        return struct.unpack(">I", self.sock.recv(4))[0]
+        return struct.unpack("!I", self.sock.recv(4))[0]
     def nextfragment(self):
         length = self.nextint()
         buf = self.sock.recv(length)
@@ -107,7 +107,7 @@ class Connection(object):
         return self.pollobj.poll()[0][1] & select.EPOLLIN
 
     def sendint(self, i):
-        return self.sock.send(struct.pack(">I", i))
+        return self.sock.send(struct.pack("!I", i))
     def sendempty(self):
         return self.sendint(0)
     def sendfragment(self, data):
