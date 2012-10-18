@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import gzip_client
+import random
 import simplewml
 
 class Client(object):
@@ -26,7 +27,13 @@ class Client(object):
                 elif tag.name == "join_lobby":
                     return
                 elif tag.name == "error":
-                    raise Exception("Received [error] with code {0} and message: {1}".format(tag.keys["error_code"], tag.keys["message"]))
+                    if tag.keys.get("error_code") == "101":
+                        t = simplewml.Tag("login")
+                        t.keys["username"] = "{0}{1:03}".format(self.name, random.randint(0,999))
+                        #print "Username in use, now trying {0}".format(t.keys["username"])
+                        self.con.sendfragment(str(t))
+                    else:
+                        raise Exception("Received [error] with code {0} and message: {1}".format(tag.keys["error_code"], tag.keys["message"]))
                 else:
                     print "Unknown tag received:\n{0}".format(str(tag))
             if "version" in data.keys:
