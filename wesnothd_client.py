@@ -38,7 +38,7 @@ class Client(object):
                     else:
                         raise Exception("Received [error] with code {0} and message: {1}".format(tag.keys["error_code"], tag.keys["message"]))
                 else:
-                    print "Unknown tag received:\n{0}".format(str(tag))
+                    sys.stderr.write("Unknown tag received:\n{0}\n".format(str(tag)))
             if "version" in data.keys:
                 # This is the backwards compatibility thing, we should really do it after the [reject]
                 raise VersionRefused("Failed to connect: we are version {0} and the server only accepts {1}".format(version, data.keys["version"]))
