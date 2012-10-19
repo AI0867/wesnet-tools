@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import optparse
-import time
 
 import wesnothd_client
 
