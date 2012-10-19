@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-import string
-
 class Tag(object):
     def __init__(self, name):
         self.name = name
@@ -66,7 +64,7 @@ class SimpleWML(object):
                 c = self.next_char()
             except IndexError:
                 break
-            if c in string.whitespace:
+            if c.isspace():
                 continue
             if c == '[':
                 tagname = self.next_tag()
