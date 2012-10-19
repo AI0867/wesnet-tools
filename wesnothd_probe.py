@@ -3,7 +3,6 @@
 import optparse
 import time
 
-import simplewml
 import wesnothd_client
 
 op = optparse.OptionParser("%prog [-s server] <versions>")
