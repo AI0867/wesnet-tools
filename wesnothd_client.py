@@ -4,6 +4,9 @@ import gzip_client
 import random
 import simplewml
 
+class VersionRefused(Exception):
+    pass
+
 class Client(object):
     def __init__(self, server="server.wesnoth.org", version="1.11", name="lobbybot"):
         self.con = gzip_client.Connection(server)
@@ -17,7 +20,7 @@ class Client(object):
                     t.keys["version"] = version
                     self.con.sendfragment(str(t))
                 elif tag.name == "reject":
-                    raise Exception("Failed to connect: we are version {0} and the server accepts clients of types {1}".format(version, tag.keys["accepted_versions"]))
+                    raise VersionRefused("Failed to connect: we are version {0} and the server accepts clients of types {1}".format(version, tag.keys["accepted_versions"]))
                 elif tag.name == "redirect":
                     self.con = gzip_client.Connection(tag.keys["host"], tag.keys["port"])
                 elif tag.name == "mustlogin":
@@ -38,7 +41,7 @@ class Client(object):
                     print "Unknown tag received:\n{0}".format(str(tag))
             if "version" in data.keys:
                 # This is the backwards compatibility thing, we should really do it after the [reject]
-                raise Exception("Failed to connect: we are version {0} and the server only accepts {1}".format(version, data.keys["version"]))
+                raise VersionRefused("Failed to connect: we are version {0} and the server only accepts {1}".format(version, data.keys["version"]))
     def read_wml(self):
         raw = self.con.nextfragment()
         return self.wml.parse(raw)
