@@ -1,29 +1,28 @@
 #!/usr/bin/python
 
-import optparse
+import json
+import socket
 
 import wesnothd_client
 
-op = optparse.OptionParser("%prog [-s server] <versions>")
+UNKNOWN = -1
+BAD = 0
+GOOD = 1
+WEIRD = 2
 
-op.add_option("-s", "--server", action = "append",
-    help = "Server(s) to probe")
+config = json.load(open("probes.json","r"))
 
-options, args = op.parse_args()
+servers = config["servers"]
+versions = config["versions"]
 
-servers = options.server
-if not servers:
-    servers = ["server.wesnoth.org"]
-versions = args
-if not versions:
-    versions = ["test"]
-
-for s in servers:
-    for v in versions:
+for server, url in servers.items():
+    for vname, vstring in versions.items():
         try:
-            client = wesnothd_client.Client(server=s, version=v)
-            alive = True
-        except Exception as e:
-            alive = False
-        print "{0}-{1}={2:g}".format(s, v, alive)
+            client = wesnothd_client.Client(server=url, version=vstring)
+            result = GOOD
+        except (socket.error, wesnothd_client.VersionRefused):
+            result = BAD
+        except Exception:
+            result = WEIRD
+        print "{0}-{1}={2:g}".format(server, vname, result)
 
