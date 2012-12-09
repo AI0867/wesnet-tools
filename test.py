@@ -42,5 +42,5 @@ except Exception as e:
     sys.exit(1)
 else:
     conn_to = client.con.sock.getpeername()
-    print "Connected to {0} on port {1} with version {2}".format(conn_to[0], conn_to[1], "?")
+    print "Connected to {0} on port {1} with version {2}".format(conn_to[0], conn_to[1], options.version)
 
