@@ -14,10 +14,10 @@ class Connection(object):
         self.pollobj.register(self.sock.fileno())
 
     def nextint(self):
-        return struct.unpack("!I", self.sock.recv(4))[0]
+        return struct.unpack("!I", self.sock.recv(4, socket.MSG_WAITALL))[0]
     def nextfragment(self):
         length = self.nextint()
-        buf = self.sock.recv(length)
+        buf = self.sock.recv(length, socket.MSG_WAITALL)
         # Force gzip format. UNDOCUMENTED?!
         data = zlib.decompress(buf, 16+zlib.MAX_WBITS)
         return data
