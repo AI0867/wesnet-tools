@@ -8,7 +8,7 @@ import zlib
 class Connection(object):
     def __init__(self, server="server.wesnoth.org", port=15000):
         self.sock = socket.create_connection((server, port))
-        self.sendempty()
+        self.sendint(0)
         self.connectionnum = self.nextint()
         self.pollobj = select.poll()
         self.pollobj.register(self.sock.fileno())
@@ -26,8 +26,6 @@ class Connection(object):
 
     def sendint(self, i):
         return self.sock.send(struct.pack("!I", i))
-    def sendempty(self):
-        return self.sendint(0)
     def sendfragment(self, data):
         # Force gzip format. UNDOCUMENTED?! (and unreachable in zlib.compress)
         compressor = zlib.compressobj(9, zlib.DEFLATED, 16+zlib.MAX_WBITS, zlib.DEF_MEM_LEVEL, 0)
