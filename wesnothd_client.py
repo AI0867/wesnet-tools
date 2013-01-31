@@ -12,7 +12,8 @@ class Client(object):
         self.con = gzip_client.Connection(server)
         self.basename = name
         self.wml = simplewml.SimpleWML()
-        while True:
+        connected = False
+        while not connected:
             data = self.read_wml()
             for tag in data.tags:
                 if tag.name == "version":
@@ -29,7 +30,7 @@ class Client(object):
                     t.keys["username"] = self.name
                     self.con.sendfragment(str(t))
                 elif tag.name == "join_lobby":
-                    return
+                    connected = True
                 elif tag.name == "error":
                     if tag.keys.get("error_code") == "101":
                         t = simplewml.Tag("login")
