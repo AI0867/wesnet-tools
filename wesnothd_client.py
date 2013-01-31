@@ -20,7 +20,7 @@ class Client(object):
                 if tag.name == "version":
                     t = simplewml.Tag("version")
                     t.keys["version"] = version
-                    self.con.sendfragment(str(t))
+                    self.write_wml(t)
                 elif tag.name == "reject":
                     raise VersionRefused("Failed to connect: we are version {0} and the server accepts clients of types {1}".format(version, tag.keys["accepted_versions"]))
                 elif tag.name == "redirect":
@@ -29,7 +29,7 @@ class Client(object):
                     t = simplewml.Tag("login")
                     self.name = self.basename
                     t.keys["username"] = self.name
-                    self.con.sendfragment(str(t))
+                    self.write_wml(t)
                 elif tag.name == "join_lobby":
                     connected = True
                 elif tag.name == "error":
@@ -37,7 +37,7 @@ class Client(object):
                         t = simplewml.Tag("login")
                         self.name = "{0}{1:03}".format(self.basename, random.randint(0,999))
                         t.keys["username"] = self.name
-                        self.con.sendfragment(str(t))
+                        self.write_wml(t)
                     else:
                         raise Exception("Received [error] with code {0} and message: {1}".format(tag.keys["error_code"], tag.keys["message"]))
                 else:
@@ -52,6 +52,8 @@ class Client(object):
     def read_wml(self):
         raw = self.con.nextfragment()
         return self.wml.parse(raw)
+    def write_wml(self, wml):
+        self.con.sendfragment(str(wml))
     def poll(self):
         if self.con.poll():
             data = self.read_wml()
