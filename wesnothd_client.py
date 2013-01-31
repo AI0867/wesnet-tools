@@ -172,8 +172,28 @@ class Client(object):
         return response
 
 if __name__ == "__main__":
+    import optparse
     import time
-    c = Client()
+
+    op = optparse.OptionParser("%prog [options]")
+
+    op.add_option("-n", "--nick",
+        help = "Nickname to use on the server")
+    op.add_option("-s", "--server",
+        help = "Speak after joining the server")
+    op.add_option("-v", "--version",
+        help = "Wesnoth version we pretend to be")
+
+    options, args = op.parse_args()
+    client_options = {}
+    if options.nick:
+        client_options["name"] = options.nick
+    if options.server:
+        client_options["server"] = options.server
+    if options.version:
+        client_options["version"] = options.version
+
+    c = Client(**client_options)
     while True:
         data = c.pollall()
         if not data:
