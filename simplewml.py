@@ -8,7 +8,7 @@ class Tag(object):
     def __str__(self):
         parts = []
         parts.append('[{0}]'.format(self.name))
-        for key in self.keys:
+        for key in sorted(self.keys.keys()):
             parts.append('{0}="{1}"'.format(str(key), str(self.keys[key])))
         for tag in self.tags:
             parts.append(str(tag))
@@ -19,7 +19,7 @@ class RootTag(Tag):
         Tag.__init__(self, "ROOT")
     def __str__(self):
         parts = []
-        for key in self.keys:
+        for key in sorted(self.keys.keys()):
             parts.append('{0}="{1}"'.format(str(key), str(self.keys[key])))
         for tag in self.tags:
             parts.append(str(tag))
