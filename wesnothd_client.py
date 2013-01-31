@@ -9,7 +9,7 @@ class VersionRefused(Exception):
     pass
 
 class Client(object):
-    def __init__(self, server="server.wesnoth.org", version="1.11", name="lobbybot"):
+    def __init__(self, server="server.wesnoth.org", version="1.11.1", name="lobbybot"):
         self.con = gzip_client.Connection(server)
         self.basename = name
         self.wml = simplewml.SimpleWML()
