@@ -10,7 +10,7 @@ class VersionRefused(Exception):
 class Client(object):
     def __init__(self, server="server.wesnoth.org", version="1.11", name="lobbybot"):
         self.con = gzip_client.Connection(server)
-        self.name = name
+        self.basename = name
         self.wml = simplewml.SimpleWML()
         while True:
             data = self.read_wml()
@@ -25,6 +25,7 @@ class Client(object):
                     self.con = gzip_client.Connection(tag.keys["host"], tag.keys["port"])
                 elif tag.name == "mustlogin":
                     t = simplewml.Tag("login")
+                    self.name = self.basename
                     t.keys["username"] = self.name
                     self.con.sendfragment(str(t))
                 elif tag.name == "join_lobby":
@@ -32,8 +33,8 @@ class Client(object):
                 elif tag.name == "error":
                     if tag.keys.get("error_code") == "101":
                         t = simplewml.Tag("login")
-                        t.keys["username"] = "{0}{1:03}".format(self.name, random.randint(0,999))
-                        #print "Username in use, now trying {0}".format(t.keys["username"])
+                        self.name = "{0}{1:03}".format(self.basename, random.randint(0,999))
+                        t.keys["username"] = self.name
                         self.con.sendfragment(str(t))
                     else:
                         raise Exception("Received [error] with code {0} and message: {1}".format(tag.keys["error_code"], tag.keys["message"]))
