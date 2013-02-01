@@ -37,6 +37,10 @@ class SimpleWML(object):
             print "Only parsed {0} out of {1} characters".format(self.pos, len(self.wmlstring))
         return root
 
+    def has_next(self):
+        return self.pos < len(self.wmlstring)
+    def peek_char(self):
+        return self.wmlstring[self.pos]
     def next_char(self):
         c = self.wmlstring[self.pos]
         self.pos += 1
@@ -53,18 +57,50 @@ class SimpleWML(object):
     def next_value(self):
         buf = ""
         c = self.next_char()
+        if c == '_':
+            # We might skip something other than spaces, but that is what the server's simplewml does too
+            while c != '"':
+                c = self.next_char()
         if c == '"':
             endchar = '"'
         else:
             buf += c
             endchar = '\n'
         buf += self.next_until(endchar)
+        if endchar == '\n':
+            return buf
+        if self.has_next() and self.peek_char() == '"':
+            buf += '"'
+            buf += self.next_value()
+        elif self.has_next():
+            c = self.next_char()
+            while True:
+                if c == '\n':
+                    break
+                elif c == ' ':
+                    c = self.next_char()
+                elif c == '+':
+                    c = self.next_char()
+                    if c != '\n':
+                        raise Exception("No newline after concatenation operator\nString so far:\n{0}\nEntire tag:\n{1}".format(buf, self.wmlstring))
+                    #if should be enough, but some idiot might switch the textdomain twice
+                    while self.peek_char() == '#':
+                        line = self.next_until('\n')
+                        if not line.startswith("#textdomain "):
+                            raise Exception("Unknown comment-line: {0}".format(line))
+                    while self.peek_char().isspace():
+                        self.next_char()
+                    buf += self.next_value()
+                    break
+                else:
+                    raise Exception("No newline after end of attribute\nString so far:\n{0}\nEntire tag:\n{1}".format(buf, self.wmlstring))
         return buf
     def parse_internal(self, tag):
         while True:
             try:
                 c = self.next_char()
             except IndexError:
+                # We don't actually bother to check if tags are still open
                 break
             if c.isspace():
                 continue
@@ -72,12 +108,17 @@ class SimpleWML(object):
                 tagname = self.next_tag()
                 if tagname[0] == '/':
                     if tagname[1:] != tag.name:
-                        print "ERROR: incorrect closing tag [{0}] for [{1}]".format(tagname, tag.name)
+                        raise Exception("ERROR: incorrect closing tag [{0}] for [{1}]\nEntire tag:\n{2}".format(tagname, tag.name, self.wmlstring))
                     break
                 else:
                     newtag = Tag(tagname)
                     tag.tags.append(newtag)
                     self.parse_internal(newtag)
+            elif c == '#':
+                line = self.next_until('\n')
+                if not line.startswith("textdomain "):
+                    raise Exception("Unknown comment-line: #{0}".format(line))
+                # We ignore textdomains for now
             else:
                 name = c + self.next_key()
                 value = self.next_value()
