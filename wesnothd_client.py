@@ -12,7 +12,7 @@ def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type("Enum", (), enums)
 
-Modes = enum("CONNECTING", "LOBBY", "GAME", "TEST")
+Modes = enum("CONNECTING", "LOBBY", "SETUP", "GAME", "TEST")
 
 class Client(object):
     def __init__(self, server="server.wesnoth.org", version="1.11.1", name="lobbybot"):
@@ -35,6 +35,8 @@ class Client(object):
                 return self.process_connecting(data) # False or True
             elif self.mode == Modes.LOBBY:
                 return self.process_lobby(data) # False or OrderedDict
+            elif self.mode == Modes.SETUP:
+                return self.process_setup(data) # False or list
             elif self.mode == Modes.GAME:
                 return self.process_game(data) # False or list
             elif self.mode == Modes.TEST:
@@ -46,8 +48,10 @@ class Client(object):
         response = collections.OrderedDict()
         lastpoll = self.poll()
         while lastpoll is not False:
+            if not lastpoll:
+                lastpoll = {}
             # Huge hack
-            if isinstance(lastpoll, list):
+            elif isinstance(lastpoll, list):
                 lastpoll = {"list": lastpoll}
             elif isinstance(lastpoll, simplewml.Tag):
                 lastpoll = {"list": [lastpoll]}
@@ -175,7 +179,12 @@ class Client(object):
                 for pair in users_del:
                     assert self.users[pair[0]].name == pair[1].name
                     get_or_create(response, "user_deleted").append(self.users[pair[0]].keys["name"])
-                    del self.users[pair[0]]
+                    try:
+                        del self.users[pair[0]]
+                    except IndexError:
+                        # TODO: this can happen after leaving (or only getting kicked?)
+                        # The update arrives before the new list
+                        raise IndexError("Attempted to delete a non-existent user")
                 if "user_added" in response and "user_deleted" in response:
                     response["user_modified"] = [user for user in response["user_added"] if user in response["user_deleted"]]
                     response["user_added"] = [user for user in response["user_added"] if user not in response["user_modified"]]
@@ -186,11 +195,19 @@ class Client(object):
                 for pair in games_del:
                     assert self.games[pair[0]].name == pair[1].name
                     get_or_create(response, "game_deleted").append(self.games[pair[0]].keys["name"])
-                    del self.games[pair[0]]
+                    try:
+                        del self.games[pair[0]]
+                    except IndexError:
+                        # TODO: this can happen after leaving (or only getting kicked?)
+                        # The update arrives before the new list
+                        raise IndexError("Attempted to delete a non-existent user")
                 if "game_added" in response and "game_deleted" in response:
                     response["game_modified"] = [game for game in response["game_added"] if game in response["game_deleted"]]
                     response["game_added"] = [game for game in response["game_added"] if game not in response["game_modified"]]
                     response["game_deleted"] = [game for game in response["game_deleted"] if game not in response["game_modified"]]
+            elif tag.name == "turn":
+                # TODO: This doesn't happen much (anymore?) Did we fix it?
+                raise Exception("Got stray [turn]. Did we just exit a game?\n{0}".format(str(tag)))
             else:
                 assert False, "Got unknown tag {0}".format(tag.name)
 
@@ -200,10 +217,10 @@ class Client(object):
             if response[key]:
                 filtered_response[key] = response[key]
         return filtered_response
-    def enter_game(self):
+    def enter_setup(self):
         self.raws = []
-        self.mode = Modes.GAME
-    def process_game(self, data):
+        self.mode = Modes.SETUP
+    def process_setup(self, data):
         response = []
         if len(data.keys):
             self.raws.append(simplewml.Tag("FAKE: loose keys"))
@@ -213,19 +230,40 @@ class Client(object):
         for tag in data.tags:
             self.raws.append(tag)
             response.append(str(tag))
-            if tag.name in ["user", "gamelist", "gamelist_diff"]:
-                print "lobby tag encountered: [{0}]".format(tag.name)
+            if tag.name == "gamelist_diff":
+                print "[gamelist_diff] encountered during setup"
+            elif tag.name in ["user", "gamelist"]:
+                pass
+            elif tag.name == "start_game":
+                self.enter_game()
             elif tag.name == "leave_game":
                 self.enter_lobby()
             else:
                 pass
+        return response
+    def enter_game(self):
+        self.mode = Modes.GAME
+    def process_game(self, data):
+        response = []
+        if len(data.keys):
+            self.raws.append(simplewml.Tag("FAKE: loose keys"))
+            self.raws[-1].keys = data.keys
+        for tag in data.tags:
+            self.raws.append(tag)
+            response.append(str(tag))
+            if tag.name == "leave_game":
+                self.enter_lobby()
         return response
     def join_game(self, game_id, observe=True):
         join = simplewml.Tag("join")
         join.keys["observe"] = "yes" if observe else "no"
         join.keys["id"] = game_id
         self.write_wml(join)
-        self.enter_game()
+        self.enter_setup()
+    def leave_game(self):
+        leave = simplewml.Tag("leave_game")
+        self.write_wml(leave)
+        self.enter_lobby()
     def speak(self, message, target=None):
         if self.mode == Modes.GAME:
             speak = simplewml.Tag("speak")
