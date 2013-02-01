@@ -34,7 +34,7 @@ class SimpleWML(object):
         self.pos = 0
         self.parse_internal(root)
         if self.pos < len(self.wmlstring):
-            print "Only parsed {0} out of {1} characters".format(self.pos, len(self.wmlstring))
+            raise Exception("Only parsed {0} out of {1} characters".format(self.pos, len(self.wmlstring)))
         return root
 
     def has_next(self):
