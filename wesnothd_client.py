@@ -12,7 +12,7 @@ def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type("Enum", (), enums)
 
-Modes = enum("CONNECTING", "LOBBY", "GAME")
+Modes = enum("CONNECTING", "LOBBY", "GAME", "TEST")
 
 class Client(object):
     def __init__(self, server="server.wesnoth.org", version="1.11.1", name="lobbybot"):
@@ -32,16 +32,25 @@ class Client(object):
         if block or self.con.poll():
             data = self.read_wml()
             if self.mode == Modes.CONNECTING:
-                return self.process_connecting(data)
+                return self.process_connecting(data) # False or True
             elif self.mode == Modes.LOBBY:
-                return self.process_lobby(data)
+                return self.process_lobby(data) # False or OrderedDict
+            elif self.mode == Modes.GAME:
+                return self.process_game(data) # False or list
+            elif self.mode == Modes.TEST:
+                return data # simplewml.RootTag
             else:
                 assert False
         return False
     def pollall(self, block=False):
         response = collections.OrderedDict()
         lastpoll = self.poll()
-        while lastpoll:
+        while lastpoll is not False:
+            # Huge hack
+            if isinstance(lastpoll, list):
+                lastpoll = {"list": lastpoll}
+            elif isinstance(lastpoll, simplewml.Tag):
+                lastpoll = {"list": [lastpoll]}
             for key, value in lastpoll.items():
                 if key not in response:
                     response[key] = value
@@ -68,11 +77,7 @@ class Client(object):
                 t.keys["username"] = self.name
                 self.write_wml(t)
             elif tag.name == "join_lobby":
-                self.last_ping = 0
-                self.users = []
-                self.games = []
-                self.chatlog = collections.deque([], 100)
-                self.mode = Modes.LOBBY
+                self.enter_lobby()
             elif tag.name == "error":
                 if tag.keys.get("error_code") == "101":
                     t = simplewml.Tag("login")
@@ -87,6 +92,12 @@ class Client(object):
             # This is the backwards compatibility thing, we should really do it after the [reject]
             raise VersionRefused("Failed to connect: we are version {0} and the server only accepts {1}".format(self.version, data.keys["version"]))
         return self.mode != Modes.CONNECTING
+    def enter_lobby(self):
+        self.last_ping = 0
+        self.users = []
+        self.games = []
+        self.chatlog = collections.deque([], 100)
+        self.mode = Modes.LOBBY
     def process_lobby(self, data):
         response = collections.OrderedDict()
         replaced_users = False
@@ -189,6 +200,50 @@ class Client(object):
             if response[key]:
                 filtered_response[key] = response[key]
         return filtered_response
+    def enter_game(self):
+        self.raws = []
+        self.mode = Modes.GAME
+    def process_game(self, data):
+        response = []
+        if len(data.keys):
+            self.raws.append(simplewml.Tag("FAKE: loose keys"))
+            self.raws[-1].keys = data.keys
+        for key, value in data.keys.items():
+            pass
+        for tag in data.tags:
+            self.raws.append(tag)
+            response.append(str(tag))
+            if tag.name in ["user", "gamelist", "gamelist_diff"]:
+                print "lobby tag encountered: [{0}]".format(tag.name)
+            elif tag.name == "leave_game":
+                self.enter_lobby()
+            else:
+                pass
+        return response
+    def join_game(self, game_id, observe=True):
+        join = simplewml.Tag("join")
+        join.keys["observe"] = "yes" if observe else "no"
+        join.keys["id"] = game_id
+        self.write_wml(join)
+        self.enter_game()
+    def speak(self, message, target=None):
+        if self.mode == Modes.GAME:
+            speak = simplewml.Tag("speak")
+            speak.keys["message"] = message
+            if target:
+                speak.keys["team_name"] = target
+            command = simplewml.Tag("command")
+            command.tags.append(speak)
+            tag = simplewml.Tag("turn")
+            tag.tags.append(command)
+        elif self.mode == Modes.LOBBY:
+            if target:
+                tag = simplewml.Tag("whisper")
+                tag.keys["receiver"] = target
+            else:
+                tag = simplewml.Tag("message")
+            tag.keys["message"] = message
+        self.write_wml(tag)
 
 if __name__ == "__main__":
     import optparse
