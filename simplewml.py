@@ -14,6 +14,8 @@ class Tag(object):
             parts.append(str(tag))
         parts.append('[/{0}]'.format(self.name))
         return '\n'.join(parts)
+    def __repr__(self):
+        return "[{0}]".format(self.name)
 class RootTag(Tag):
     def __init__(self):
         Tag.__init__(self, "ROOT")
