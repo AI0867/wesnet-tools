@@ -282,6 +282,18 @@ class Client(object):
                 tag = simplewml.Tag("message")
             tag.keys["message"] = message
         self.write_wml(tag)
+    def end_turn(self):
+        end_turn = simplewml.Tag("end_turn")
+        command = simplewml.Tag("command")
+        command.tags.append(end_turn)
+        turn = simplewml.Tag("turn")
+        turn.tags.append(command)
+        self.write_wml(turn)
+    def give_control(self, side, player):
+        control = simplewml.Tag("change_controller")
+        control.keys["side"] = side
+        control.keys["player"] = player
+        self.write_wml(control)
 
 if __name__ == "__main__":
     import optparse
