@@ -263,6 +263,7 @@ class Client(object):
     def leave_game(self):
         leave = simplewml.Tag("leave_game")
         self.write_wml(leave)
+        # We do this ourselves as we do not always get a [leave_game] in return, though sometimes, we do.
         self.enter_lobby()
     def speak(self, message, target=None):
         if self.mode == Modes.GAME:
