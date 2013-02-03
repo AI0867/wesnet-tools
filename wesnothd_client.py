@@ -14,6 +14,11 @@ def enum(*sequential, **named):
 
 Modes = enum("CONNECTING", "LOBBY", "SETUP", "GAME", "TEST")
 
+def get_or_create(dictionary, key):
+    if key not in dictionary:
+        dictionary[key] = []
+    return dictionary[key]
+
 class Client(object):
     def __init__(self, server="server.wesnoth.org", version="1.11.1", name="lobbybot"):
         self.con = gzip_client.Connection(server)
@@ -38,7 +43,7 @@ class Client(object):
             elif self.mode == Modes.SETUP:
                 return self.process_setup(data) # False or list
             elif self.mode == Modes.GAME:
-                return self.process_game(data) # False or list
+                return self.process_game(data) # False or dict
             elif self.mode == Modes.TEST:
                 return data # simplewml.RootTag
             else:
@@ -105,10 +110,6 @@ class Client(object):
     def process_lobby(self, data):
         response = collections.OrderedDict()
         replaced_users = False
-        def get_or_create(dictionary, key):
-            if key not in dictionary:
-                dictionary[key] = []
-            return dictionary[key]
         if "ping" in data.keys:
             self.last_ping = data.keys["ping"]
             response["ping"] = data.keys["ping"]
@@ -244,15 +245,31 @@ class Client(object):
     def enter_game(self):
         self.mode = Modes.GAME
     def process_game(self, data):
-        response = []
+        response = {}
         if len(data.keys):
             self.raws.append(simplewml.Tag("FAKE: loose keys"))
             self.raws[-1].keys = data.keys
         for tag in data.tags:
             self.raws.append(tag)
-            response.append(str(tag))
             if tag.name == "leave_game":
                 self.enter_lobby()
+            elif tag.name == "host_transfer":
+                get_or_create(response, "host_transfer").append((tag.keys["name"], tag.keys["value"]))
+            elif tag.name == "change_controller":
+                get_or_create(response, "change_controller").append((int(tag.keys["side"]), tag.keys["player"], tag.keys["controller"]))
+            elif tag.name == "observer":
+                get_or_create(response, "observer_added").append(tag.keys["name"])
+            elif tag.name == "observer_quit":
+                get_or_create(response, "observer_deleted").append(tag.keys["name"])
+            elif tag.name == "turn":
+                if len(tag.tags) == 1 and tag.tags[0].name == "command" and\
+                    len(tag.tags[0].tags) == 1 and tag.tags[0].tags[0].name == "speak":
+                    speak = tag.tags[0].tags[0]
+                    speaker = speak.keys["id"]
+                    message = speak.keys["message"]
+                    get_or_create(response, "message").append((speaker, message))
+            else:
+                get_or_create(response, "loose_tags").append(tag)
         return response
     def join_game(self, game_id, observe=True):
         join = simplewml.Tag("join")
