@@ -9,7 +9,7 @@ class Tag(object):
         parts = []
         parts.append('[{0}]'.format(self.name))
         for key in sorted(self.keys.keys()):
-            parts.append('{0}="{1}"'.format(str(key), str(self.keys[key])))
+            parts.append('{0}="{1}"'.format(str(key), str(self.keys[key]).replace('"', '""')))
         for tag in self.tags:
             parts.append(str(tag))
         parts.append('[/{0}]'.format(self.name))
@@ -22,7 +22,7 @@ class RootTag(Tag):
     def __str__(self):
         parts = []
         for key in sorted(self.keys.keys()):
-            parts.append('{0}="{1}"'.format(str(key), str(self.keys[key])))
+            parts.append('{0}="{1}"'.format(str(key), str(self.keys[key]).replace('"', '""')))
         for tag in self.tags:
             parts.append(str(tag))
         return '\n'.join(parts)
