@@ -268,6 +268,7 @@ class Client(object):
                     speaker = speak.keys["id"]
                     message = speak.keys["message"]
                     get_or_create(response, "message").append((speaker, message))
+                    self.chatlog.append(speak)
             else:
                 get_or_create(response, "loose_tags").append(tag)
         return response
