@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import collections
-import gzip_client
+import gzip_connection
 import random
 import simplewml
 
@@ -21,7 +21,7 @@ def get_or_create(dictionary, key):
 
 class Client(object):
     def __init__(self, server="server.wesnoth.org", version="1.11.1", name="lobbybot"):
-        self.con = gzip_client.Connection(server)
+        self.con = gzip_connection.GzipClient(server)
         self.version = version
         self.basename = name
         self.wml = simplewml.SimpleWML()
@@ -79,7 +79,7 @@ class Client(object):
             elif tag.name == "reject":
                 raise VersionRefused("Failed to connect: we are version {0} and the server accepts clients of types {1}".format(self.version, tag.keys["accepted_versions"]))
             elif tag.name == "redirect":
-                self.con = gzip_client.Connection(tag.keys["host"], tag.keys["port"])
+                self.con = gzip_connection.GzipClient(tag.keys["host"], tag.keys["port"])
             elif tag.name == "mustlogin":
                 t = simplewml.Tag("login")
                 self.name = self.basename
