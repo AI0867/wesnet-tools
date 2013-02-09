@@ -49,7 +49,7 @@ class GzipServer(object):
         self.pollobj = select.poll()
         self.pollobj.register(self.sock.fileno())
         self.clients = weakref.WeakValueDictionary()
-        self.next_id = 0
+        self.next_id = 1
 
     def poll(self):
         result = self.pollobj.poll(0)
