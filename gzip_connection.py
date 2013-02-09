@@ -15,9 +15,17 @@ class GzipSocket(object):
         result = self.pollobj.poll(0)
         return len(result) > 0 and result[0][1] & select.EPOLLIN
     def nextint(self):
-        return struct.unpack("!I", self.sock.recv(4, socket.MSG_WAITALL))[0]
+        packed = self.sock.recv(4, socket.MSG_WAITALL)
+        if len(packed) == 4:
+            return struct.unpack("!I", packed)[0]
+        elif len(packed) == 0:
+            return None
+        else:
+            raise Exception("Incomplete packetlength received")
     def nextfragment(self):
         length = self.nextint()
+        if length == None:
+            return None
         buf = self.sock.recv(length, socket.MSG_WAITALL)
         # Force gzip format. UNDOCUMENTED?!
         data = zlib.decompress(buf, 16+zlib.MAX_WBITS)
