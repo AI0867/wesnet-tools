@@ -16,39 +16,46 @@ class Config(object):
         self.valen = self.config["valen"]
         self.versions = self.config["versions"]
         self.servers = self.config["servers"]
+    def version_by_filter(self, versionstr):
+        for release in self.versions:
+            if fnmatch.fnmatch(versionstr, release["filter"]):
+                return release
+        return None
+    def version_by_name(self, versionname):
+        for release in self.versions:
+            if release["name"] == versionname:
+                return release
+        return None
 
-def valen_report():
-    servers = []
-    for line in open(Config().valen).readlines():
-        if not line.startswith("mp-"):
-            continue
-        k,v = line.split("=")
-        ks = k.split("-")
-        if len(ks) == 3:
-            servers.append((ks[1], ks[2], int(v)))
-    return servers
-
-def versionstr_to_releaseobj(version):
-    for release in Config().versions:
-        if fnmatch.fnmatch(version, release["filter"]):
-            return release
-    return None
+class Valen(object):
+    def __init__(self):
+        # Format: (servername, versionname, status)
+        self.servers = []
+        for line in open(Config().valen).readlines():
+            if not line.startswith("mp-"):
+                continue
+            k,v = line.split("=")
+            ks = k.split("-")
+            if len(ks) == 3:
+                self.servers.append((ks[1], ks[2], int(v)))
+    def active_servers(self):
+        return [server for server in self.servers if server[2] == 1]
+    def active_versionnames(self):
+        return set([server[1] for server in self.active_servers()])
 
 # REFACTOR
 def find_valid_servernames(versionname):
-    report = valen_report()
-    active_servers = [server for server in report if server[1] == versionname and server[2] == 1]
-    return [server[0] for server in active_servers]
+    return [server[0] for server in Valen().active_servers() if server[1] == versionname]
 
 # REFACTOR
 def versions_up():
-    servers_up = set([server[1] for server in valen_report() if server[2] == 1])
-    versions = [version["filter"] for version in Config().versions if version["name"] in servers_up]
-    return versions
+    versions_up = set([server[1] for server in Valen().active_servers()])
+    return [version["filter"] for version in Config().versions if version["name"] in versions_up]
+    #return [Config().version_by_name(version)["filter"] for version in versions_up]
 
 # REFACTOR
 def direct_version(version):
-    releaseobj = versionstr_to_releaseobj(version)
+    releaseobj = Config().version_by_filter(version)
     if releaseobj:
         servers_up = find_valid_servernames(releaseobj["name"])
         server_objs = Config().servers
