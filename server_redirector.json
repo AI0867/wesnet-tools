@@ -1,0 +1,28 @@
+{
+    "valen" : "/var/lib/valen/report",
+    "versions" : [
+        { "name"   : "oldstable",
+          "port"   : 14998,
+          "filter" : "1.8*" },
+        { "name"   : "stable",
+          "port"   : 14999,
+          "filter" : "1.10*"},
+        { "name"   : "dev",
+          "port"   : 14997,
+          "filter" : "1.11.1"},
+        { "name"   : "trunk",
+          "port"   : 15000,
+          "filter" : "1.11*+svn"}
+    ],
+    "servers" : [
+        { "name"   : "main",
+          "order"  : 0,
+          "host"   : "server.wesnoth.org"},
+        { "name"   : "alt2",
+          "order"  : 1,
+          "host"   : "server2.wesnoth.org"},
+        { "name"   : "alt3",
+          "order"  : 2,
+          "host"   : "server3.wesnoth.org"}
+    ]
+}
