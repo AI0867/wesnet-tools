@@ -80,9 +80,10 @@ def direct_version(version):
 
 # Some of this class should be factored out
 class Client(object):
-    def __init__(self, sock):
+    def __init__(self, sock, verbose):
         self.sock = sock
         self.sock.sendfragment(str(simplewml.Tag("version")))
+        self.verbose = verbose
     def poll(self):
         if self.sock.poll():
             self.process()
@@ -97,6 +98,11 @@ class Client(object):
             if tag.name == "version":
                 redir_tag = direct_version(tag.keys["version"])
                 self.sock.sendfragment(str(redir_tag))
+                if self.verbose:
+                    if redir_tag.name == "redirect":
+                        print "Pointed {0} with version {1} to {2}".format(self.sock.getpeername(), tag.keys["version"], (redir_tag.keys["host"], redir_tag.keys["port"]))
+                    else:
+                        print "Told {0} with version {1} that we only know about functioning servers with versions {2}".format(self.sock.getpeername(), tag.keys["version"] ,(redir_tag if redir_tag.name == "reject" else redir_tag.tags[0]).keys["accepted_versions"])
 
 if __name__ == "__main__":
     import json
@@ -108,6 +114,9 @@ if __name__ == "__main__":
     op.add_option("-c", "--config",
         default = "server_redirector.json",
         help = "Path to config file")
+    op.add_option("-v", "--verbose",
+        action = "store_true",
+        help = "Print information about each client's redirection")
 
     options, args = op.parse_args()
 
@@ -119,7 +128,7 @@ if __name__ == "__main__":
     while True:
         acted = False
         if server.poll():
-            clients.append(Client(server.accept()))
+            clients.append(Client(server.accept(), options.verbose))
             acted = True
         for client in clients:
             try:
