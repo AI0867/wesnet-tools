@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
 import fnmatch
-import gzip_connection
 import simplewml
-import traceback
+import wmlserver
 
 class Config(object):
     _borg = {}
@@ -78,22 +77,12 @@ def direct_version(version):
             reject = root
         return reject
 
-# Some of this class should be factored out
-class Client(object):
+class Client(wmlserver.WMLClient):
     def __init__(self, sock, verbose):
-        self.sock = sock
+        wmlserver.WMLClient.__init__(self, sock)
         self.sock.sendfragment(str(simplewml.Tag("version")))
         self.verbose = verbose
-    def poll(self):
-        if self.sock.poll():
-            self.process()
-            return True
-        return False
-    def process(self):
-        raw = self.sock.nextfragment()
-        if raw == None:
-            raise StopIteration
-        data = simplewml.SimpleWML().parse(raw)
+    def process(self, data):
         for tag in data.tags:
             if tag.name == "version":
                 redir_tag = direct_version(tag.keys["version"])
@@ -103,6 +92,13 @@ class Client(object):
                         print "Pointed {0} with version {1} to {2}".format(self.sock.getpeername(), tag.keys["version"], (redir_tag.keys["host"], redir_tag.keys["port"]))
                     else:
                         print "Told {0} with version {1} that we only know about functioning servers with versions {2}".format(self.sock.getpeername(), tag.keys["version"] ,(redir_tag if redir_tag.name == "reject" else redir_tag.tags[0]).keys["accepted_versions"])
+
+class Server(wmlserver.WMLServer):
+    def __init__(self, verbose):
+        wmlserver.WMLServer.__init__(self, Client)
+        self.verbose = verbose
+    def accept(self, sock):
+        self.clients.append(self.clientclass(sock, self.verbose))
 
 if __name__ == "__main__":
     import json
@@ -122,23 +118,6 @@ if __name__ == "__main__":
 
     Config().read(options.config)
 
-    server = gzip_connection.GzipServer()
-    clients = []
+    server = Server(options.verbose)
 
-    while True:
-        acted = False
-        if server.poll():
-            clients.append(Client(server.accept(), options.verbose))
-            acted = True
-        for client in clients:
-            try:
-                if client.poll():
-                    acted = True
-            except StopIteration:
-                clients.remove(client)
-            except Exception as e:
-                print "A client died:"
-                traceback.print_exc()
-                clients.remove(client)
-        if not acted:
-            time.sleep(1)
+    server.loop()

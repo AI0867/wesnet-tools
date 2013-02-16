@@ -1,23 +1,13 @@
 #!/usr/bin/python
 
-import gzip_connection
 import simplewml
-import traceback
+import wmlserver
 
-class Client(object):
+class Client(wmlserver.WMLClient):
     def __init__(self, sock, config):
-        self.sock = sock
+        wmlserver.WMLClient.__init__(self, sock)
         self.config = config
-    def poll(self):
-        if self.sock.poll():
-            self.process()
-            return True
-        return False
-    def process(self):
-        raw = self.sock.nextfragment()
-        if raw == None:
-            raise StopIteration
-        data = simplewml.SimpleWML().parse(raw)
+    def process(self, data):
         for tag in data.tags:
             if tag.name == "request_campaign_list":
                 campaigns = simplewml.Tag("campaigns")
@@ -25,32 +15,19 @@ class Client(object):
                 campaigns.tags = [campaign for campaign in self.config.tags[0].tags]
                 self.sock.sendfragment(str(campaigns))
 
-if __name__ == "__main__":
-    import time
+class Server(wmlserver.WMLServer):
+    def __init__(self, config):
+        wmlserver.WMLServer.__init__(self, Client, port=int(config.keys["port"]))
+        self.config = config
+    def accept(self, sock):
+        self.clients.append(self.clientclass(sock, self.config))
+        print "Accepted a client"
 
+if __name__ == "__main__":
     # We read the entire file into a string, then iterate over it in the parser
     # It's probably more efficient (especially memory-wise) to use the stream instead
     config = simplewml.SimpleWML().parse(open("addond.cfg").read())
 
-    server = gzip_connection.GzipServer(port=int(config.keys["port"]))
-    clients = []
+    server = Server(config)
 
-    while True:
-        acted = False
-        if server.poll():
-            clients.append(Client(server.accept(), config))
-            print "Accepted a client"
-            acted = True
-        for client in clients:
-            try:
-                if client.poll():
-                    acted = True
-            except StopIteration:
-                clients.remove(client)
-            except Exception as e:
-                print "A client died:"
-                traceback.print_exc()
-                clients.remove(client)
-        if not acted:
-            time.sleep(1)
-
+    server.loop()
