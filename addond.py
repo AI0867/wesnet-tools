@@ -14,6 +14,12 @@ class Client(wmlserver.WMLClient):
                 # We could do filtering here, but the client never asks for it
                 campaigns.tags = [campaign for campaign in self.config.tags[0].tags]
                 self.sock.sendfragment(str(campaigns))
+            elif tag.name == "request_terms":
+                self.send_message("All add-ons uploaded to this server must be licensed under the terms of the GNU General Public License (GPL). By uploading content to this server, you certify that you have the right to place the content under the conditions of the GPL, and choose to do so.")
+    def send_message(self, message):
+        msg = simplewml.Tag("message")
+        msg.keys["message"] = message
+        self.sock.sendfragment(str(msg))
 
 class Server(wmlserver.WMLServer):
     def __init__(self, config):
