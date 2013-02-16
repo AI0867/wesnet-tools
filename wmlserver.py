@@ -47,4 +47,4 @@ class WMLServer(object):
     def loop(self):
         while True:
             if not self.poll():
-                time.sleep(1)
+                time.sleep(.02)
