@@ -1,6 +1,8 @@
 #!/usr/bin/python
 
+import os
 import simplewml
+import time
 import wmlserver
 
 class Client(wmlserver.WMLClient):
@@ -68,6 +70,18 @@ class Server(wmlserver.WMLServer):
     def accept(self, sock):
         self.clients.append(self.clientclass(sock, self.config))
         print "Accepted a client"
+    def loop(self):
+        lastsave = time.time()
+        while True:
+            if lastsave + 60 < time.time():
+                self.save()
+                lastsave = time.time()
+            if not self.poll():
+                time.sleep(.02)
+    # TODO: save on exit
+    def save(self):
+        open("addond.cfg.new", "w").write(str(self.config))
+        os.rename("addond.cfg.new", "addond.cfg")
 
 if __name__ == "__main__":
     # We read the entire file into a string, then iterate over it in the parser
