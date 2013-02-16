@@ -80,13 +80,13 @@ def direct_version(version):
 class Client(wmlserver.WMLClient):
     def __init__(self, sock, verbose):
         wmlserver.WMLClient.__init__(self, sock)
-        self.sock.sendfragment(str(simplewml.Tag("version")))
+        self.write_wml(simplewml.Tag("version"))
         self.verbose = verbose
     def process(self, data):
         for tag in data.tags:
             if tag.name == "version":
                 redir_tag = direct_version(tag.keys["version"])
-                self.sock.sendfragment(str(redir_tag))
+                self.write_wml(redir_tag)
                 if self.verbose:
                     if redir_tag.name == "redirect":
                         print "Pointed {0} with version {1} to {2}".format(self.sock.getpeername(), tag.keys["version"], (redir_tag.keys["host"], redir_tag.keys["port"]))

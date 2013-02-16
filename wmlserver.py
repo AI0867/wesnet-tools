@@ -18,6 +18,8 @@ class WMLClient(object):
         return False
     def process(self, data):
         raise NotImplementedError
+    def write_wml(self, wml):
+        self.sock.sendfragment(str(wml))
 
 class WMLServer(object):
     def __init__(self, clientclass, **kwargs):
