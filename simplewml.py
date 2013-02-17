@@ -121,7 +121,7 @@ class SimpleWML(object):
                 line = self.next_until('\n')
                 if not line.startswith("textdomain "):
                     raise Exception("Unknown comment-line: #{0}".format(line))
-                # We ignore textdomains for now
+                # We completely ignore textdomains, just like wesnothd
             else:
                 name = c + self.next_key()
                 value = self.next_value()
