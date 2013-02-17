@@ -64,6 +64,27 @@ class Client(wmlserver.WMLClient):
                 roottag.tags = data.tags
                 open(filename, "w").write(str(roottag))
                 self.send_message("Add-on accepted.")
+            elif tag.name == "delete":
+                lcname = tag.keys["name"].lower()
+                addons = [addon for addon in self.config.tags[0].tags if addon.keys["name"].lower() == lcname]
+                if not addons:
+                    self.send_error("No add-on with that name exists.")
+                elif tag.keys["passphrase"] != addons[0].keys["passphrase"]:
+                    self.send_error("The passphrase is incorrect.")
+                else:
+                    os.remove(addons[0].keys["filename"])
+                    self.config.tags[0].tags.remove(addons[0])
+                    self.send_message("Add-on deleted.")
+            elif tag.name == "change_passphrase":
+                lcname = tag.keys["name"].lower()
+                addons = [addon for addon in self.config.tags[0].tags if addon.keys["name"].lower() == lcname]
+                if not addons:
+                    self.send_error("No add-on with that name exists.")
+                elif tag.keys["passphrase"] != addons[0].keys["passphrase"]:
+                    self.send_error("Your old passphrase was incorrect.")
+                else:
+                    addons[0].keys["passphrase"] = tag.keys["new_passphrase"]
+                    self.send_message("Passphrase changed.")
     def send_message(self, message):
         msg = simplewml.Tag("message")
         msg.keys["message"] = message
