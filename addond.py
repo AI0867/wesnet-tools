@@ -50,6 +50,8 @@ class Client(wmlserver.WMLClient):
                 addon.keys["downloads"] = downloads
                 filename = "data/{0}".format(tag.keys["name"])
                 addon.keys["filename"] = filename
+                addon.keys["timestamp"] = int(time.time())
+                addon.keys["upload_ip"] = self.sock.getpeername()[0]
                 # TODO: translation tags
                 roottag = simplewml.RootTag()
                 roottag.tags = data.tags
