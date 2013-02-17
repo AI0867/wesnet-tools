@@ -49,7 +49,11 @@ class GzipSocketNonBlocking(GzipSocket):
         self.readbuf = ""
         self.writebuf = ""
     def process(self, getpoll=False):
-        result = self.pollobj.poll(0)[0][1]
+        result = self.pollobj.poll(0)
+        if len(result):
+            result = result[0][1]
+        else:
+            result = 0
         acted = False
         if result & select.POLLOUT and self.writebuf:
             sent = self.sock.send(self.writebuf)
