@@ -29,7 +29,11 @@ class WMLServer(object):
     def poll(self):
         acted = False
         if self.sock.poll():
-            self.accept(self.sock.accept())
+            try:
+                self.accept(self.sock.accept())
+            except Exception as e:
+                print "Failed to accept a connection:"
+                traceback.print_exc()
             acted = True
         for client in self.clients:
             try:
