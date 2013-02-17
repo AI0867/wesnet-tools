@@ -15,7 +15,14 @@ class Client(wmlserver.WMLClient):
             if tag.name == "request_campaign_list":
                 campaigns = simplewml.Tag("campaigns")
                 # We could do filtering here, but the client never asks for it
-                campaigns.tags = [campaign for campaign in self.config.tags[0].tags]
+                for campaign in self.config.tags[0].tags:
+                    camp = simplewml.Tag("campaign")
+                    camp.keys = campaign.keys.copy()
+                    camp.tags = campaign.tags
+                    del camp.keys["passphrase"]
+                    del camp.keys["upload_ip"]
+                    camp.keys.pop("email", None)
+                    campaigns.tags.append(camp)
                 self.write_wml(campaigns)
             elif tag.name == "request_terms":
                 self.send_message("All add-ons uploaded to this server must be licensed under the terms of the GNU General Public License (GPL). By uploading content to this server, you certify that you have the right to place the content under the conditions of the GPL, and choose to do so.")
