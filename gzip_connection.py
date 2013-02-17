@@ -60,8 +60,12 @@ class GzipSocketNonBlocking(GzipSocket):
             self.writebuf = self.writebuf[sent:]
             acted = True
         if result & select.POLLIN:
-            self.readbuf += self.sock.recv(2**16)
-            acted = True
+            bytesread = self.sock.recv(2**16)
+            self.readbuf += bytesread
+            if not bytesread:
+                result |= select.POLLHUP
+            else:
+                acted = True
         if result & (select.POLLERR | select.POLLNVAL):
             raise socket.Error("poll returned POLLERR or POLLNVAL")
         return result if getpoll else acted
