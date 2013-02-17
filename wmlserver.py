@@ -15,7 +15,7 @@ class WMLClient(object):
             data = self.wml.parse(frag)
             self.process(data)
             return True
-        return False
+        return self.sock.process()
     def process(self, data):
         raise NotImplementedError
     def write_wml(self, wml):
@@ -24,7 +24,7 @@ class WMLClient(object):
 class WMLServer(object):
     def __init__(self, clientclass, **kwargs):
         self.clientclass = clientclass
-        self.sock = gzip_connection.GzipServer(**kwargs)
+        self.sock = gzip_connection.GzipServer(clientclass=gzip_connection.GzipSocketNonBlocking, **kwargs)
         self.clients = []
     def poll(self):
         acted = False
