@@ -3,6 +3,7 @@
 import os
 import simplewml
 import time
+import weakref
 import wmlserver
 
 class Client(wmlserver.WMLClient):
@@ -63,10 +64,17 @@ class Client(wmlserver.WMLClient):
         err.keys["message"] = "#Error: {0}".format(message)
         self.write_wml(err)
 
+def save(config):
+    open("addond.cfg.new", "w").write(str(config))
+    os.rename("addond.cfg.new", "addond.cfg")
+
 class Server(wmlserver.WMLServer):
     def __init__(self, config):
         wmlserver.WMLServer.__init__(self, Client, port=int(config.keys["port"]))
         self.config = config
+        # The second argument gets called when the object is finalized
+        # It cannot use self though, as that would be a reference
+        self._wr = weakref.ref(self, lambda wr, cfg=self.config: save(cfg))
     def accept(self, sock):
         self.clients.append(self.clientclass(sock, self.config))
         print "Accepted a client"
@@ -74,14 +82,10 @@ class Server(wmlserver.WMLServer):
         lastsave = time.time()
         while True:
             if lastsave + 60 < time.time():
-                self.save()
+                save(self.config)
                 lastsave = time.time()
             if not self.poll():
                 time.sleep(.02)
-    # TODO: save on exit
-    def save(self):
-        open("addond.cfg.new", "w").write(str(self.config))
-        os.rename("addond.cfg.new", "addond.cfg")
 
 if __name__ == "__main__":
     # We read the entire file into a string, then iterate over it in the parser
