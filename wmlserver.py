@@ -15,7 +15,7 @@ class WMLClient(object):
             data = self.wml.parse(frag)
             self.process(data)
             return True
-        return self.sock.process()
+        return self.sock.process_buffers()
     def process(self, data):
         raise NotImplementedError
     def write_wml(self, wml):

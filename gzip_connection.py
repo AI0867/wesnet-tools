@@ -48,7 +48,7 @@ class GzipSocketNonBlocking(GzipSocket):
         self.sock.setblocking(0)
         self.readbuf = ""
         self.writebuf = ""
-    def process(self, getpoll=False):
+    def process_buffers(self, getpoll=False):
         result = self.pollobj.poll(0)
         if len(result):
             result = result[0][1]
@@ -70,7 +70,7 @@ class GzipSocketNonBlocking(GzipSocket):
             raise socket.Error("poll returned POLLERR or POLLNVAL")
         return result if getpoll else acted
     def poll(self):
-        pollresult = self.process(True)
+        pollresult = self.process_buffers(True)
         if pollresult & select.POLLHUP:
             # You're not getting any more, so get the information to the caller
             return True
@@ -79,7 +79,7 @@ class GzipSocketNonBlocking(GzipSocket):
         length = struct.unpack("!I", self.readbuf[:4])[0]
         return len(self.readbuf) >= 4 + length
     def nextint(self):
-        pollresult = self.process(True)
+        pollresult = self.process_buffers(True)
         if not self.readbuf and pollresult & select.POLLHUP:
             return None
         if len(self.readbuf) < 4:
@@ -99,14 +99,14 @@ class GzipSocketNonBlocking(GzipSocket):
         return data
     def sendint(self, i):
         self.writebuf += struct.pack("!I", i)
-        self.process()
+        self.process_buffers()
     def sendfragment(self, data):
         # Force gzip format. UNDOCUMENTED?! (and unreachable in zlib.compress)
         compressor = zlib.compressobj(9, zlib.DEFLATED, 16+zlib.MAX_WBITS, zlib.DEF_MEM_LEVEL, 0)
         buf = compressor.compress(data) + compressor.flush()
         res = self.sendint(len(buf))
         self.writebuf += buf
-        self.process()
+        self.process_buffers()
 
 class GzipServer(object):
     def __init__(self, server="", port=15000, clientclass=GzipSocket):
