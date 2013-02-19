@@ -42,6 +42,12 @@ class WMLServer(object):
             except StopIteration:
                 self.clients.remove(client)
             except Exception as e:
+                try:
+                    error = simplewml.Tag("error")
+                    error.keys["message"] = "Internal error: " + str(e)
+                    client.write_wml(error)
+                except:
+                    pass
                 print "A client died:"
                 traceback.print_exc()
                 self.clients.remove(client)
