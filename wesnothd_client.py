@@ -323,7 +323,7 @@ if __name__ == "__main__":
     op.add_option("-n", "--nick",
         help = "Nickname to use on the server")
     op.add_option("-s", "--server",
-        help = "Speak after joining the server")
+        help = "Server to connect to")
     op.add_option("-v", "--version",
         help = "Wesnoth version we pretend to be")
 
