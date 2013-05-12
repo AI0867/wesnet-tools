@@ -1,7 +1,7 @@
-wesnothd\_client
+wesnet-tools
 ================
 
-A no longer correctly-named set of python tools that function as clients or servers using wesnoth's gzip-compressed WML protocol.
+A set of python tools that function as clients or servers using wesnoth's gzip-compressed WML protocol.
 
 Programs
 --------
