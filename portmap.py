@@ -28,6 +28,8 @@ for server in servers:
             peer = client.con.sock.getpeername()
             if not peer in portmap: portmap[peer] = []
             portmap[peer].append(version)
+        except wesnothd_client.RedirectLoop as e:
+            print e
         except:
             pass
 

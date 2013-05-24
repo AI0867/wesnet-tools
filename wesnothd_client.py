@@ -8,6 +8,9 @@ import simplewml
 class VersionRefused(Exception):
     pass
 
+class RedirectLoop(ValueError):
+    pass
+
 def enum(*sequential, **named):
     enums = dict(zip(sequential, range(len(sequential))), **named)
     return type("Enum", (), enums)
@@ -26,6 +29,7 @@ class Client(object):
         self.basename = name
         self.wml = simplewml.SimpleWML()
         self.mode = Modes.CONNECTING
+        self.redirpath = [self.con.getpeername()]
         while not self.poll(block=True):
             pass
     def read_wml(self):
@@ -80,6 +84,13 @@ class Client(object):
                 raise VersionRefused("Failed to connect: we are version {0} and the server accepts clients of types {1}".format(self.version, tag.keys["accepted_versions"]))
             elif tag.name == "redirect":
                 self.con = gzip_connection.GzipClient(tag.keys["host"], tag.keys["port"])
+                if self.con.getpeername() in self.redirpath:
+                    errmsg = "Redirect loop detected on version {0}: ".format(self.version)
+                    for step in self.redirpath:
+                        errmsg += "{0}:{1} -> ".format(*step)
+                    errmsg += "{0}:{1}".format(tag.keys["host"], tag.keys["port"])
+                    raise RedirectLoop(errmsg)
+                self.redirpath.append(self.con.getpeername())
             elif tag.name == "mustlogin":
                 t = simplewml.Tag("login")
                 self.name = self.basename
