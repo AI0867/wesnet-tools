@@ -9,10 +9,10 @@
           "filter" : "1.10*"},
         { "name"   : "dev",
           "port"   : 14997,
-          "filter" : "1.11.1"},
+          "filter" : "1.11.4"},
         { "name"   : "trunk",
           "port"   : 15000,
-          "filter" : "1.11*+svn"}
+          "filter" : "1.11*+dev"}
     ],
     "servers" : [
         { "name"   : "main",
