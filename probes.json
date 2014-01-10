@@ -6,6 +6,6 @@
     "stable" : "1.10.7",
     "oldstable" : "1.8.6",
     "ancientstable" : "1.6.5",
-    "dev" : "1.11.6",
-    "trunk" : "1.11.6+dev" }
+    "dev" : "1.11.7",
+    "trunk" : "1.11.7+dev" }
 }
